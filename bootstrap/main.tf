@@ -33,6 +33,10 @@ variable "state_bucket_name" {
 }
 
 resource "aws_s3_bucket" "state" {
+  # checkov:skip=CKV2_AWS_62:Event notifications not needed for the state bucket
+  # checkov:skip=CKV_AWS_18:Access logging not needed for a single-user lab bucket
+  # checkov:skip=CKV_AWS_144:Cross-region replication not needed for a lab state bucket
+  # checkov:skip=CKV_AWS_145:SSE-S3 used instead of KMS to avoid key costs in the lab
   bucket = var.state_bucket_name
 
   lifecycle {
@@ -45,6 +49,25 @@ resource "aws_s3_bucket_versioning" "state" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  rule {
+    id     = "expire-old-state-versions"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 

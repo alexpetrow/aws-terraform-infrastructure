@@ -54,6 +54,7 @@ resource "aws_security_group" "this" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "http" {
+  # checkov:skip=CKV_AWS_260:Public web server by design; production would terminate HTTPS on a load balancer
   security_group_id = aws_security_group.this.id
   description       = "HTTP from anywhere"
   cidr_ipv4         = "0.0.0.0/0"
@@ -86,6 +87,8 @@ resource "aws_key_pair" "this" {
 }
 
 resource "aws_instance" "this" {
+  # checkov:skip=CKV_AWS_88:Public IP is required in v1; v2 moves the instance behind a load balancer
+  # checkov:skip=CKV_AWS_126:Detailed monitoring adds cost; basic 5-minute monitoring is enough for the lab
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
@@ -93,6 +96,7 @@ resource "aws_instance" "this" {
   iam_instance_profile        = aws_iam_instance_profile.this.name
   key_name                    = aws_key_pair.this.key_name
   associate_public_ip_address = true
+  ebs_optimized               = true
 
   metadata_options {
     http_endpoint               = "enabled"
