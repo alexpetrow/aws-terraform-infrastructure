@@ -1,0 +1,2 @@
+# Copy to terraform.tfvars. S3 bucket names are globally unique.
+state_bucket_name = "your-name-tf-state-euc1"
