@@ -1,0 +1,19 @@
+---
+plugin: amazon.aws.aws_ec2
+
+regions:
+  - eu-central-1
+
+filters:
+  tag:Project: aws-terraform-infrastructure
+  instance-state-name: running
+
+hostnames:
+  - tag:Name
+
+keyed_groups:
+  - key: ec2_tags.Role
+    prefix: role
+
+compose:
+  ansible_host: public_ip_address
