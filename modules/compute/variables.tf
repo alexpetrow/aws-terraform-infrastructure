@@ -39,3 +39,9 @@ variable "ssh_public_key" {
   description = "Public SSH key content for the instance"
   type        = string
 }
+
+variable "role" {
+  description = "Role of the instance, used by Ansible dynamic inventory for grouping"
+  type        = string
+  default     = "web"
+}
