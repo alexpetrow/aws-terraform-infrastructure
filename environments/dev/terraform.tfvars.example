@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars and fill in your values
+ssh_allowed_cidr = "203.0.113.10/32"
+ssh_public_key   = "ssh-ed25519 AAAA... user@host"

@@ -13,3 +13,15 @@ output "public_subnet_ids" {
 output "private_subnet_ids" {
   value = module.network.private_subnet_ids
 }
+
+output "instance_id" {
+  value = module.compute.instance_id
+}
+
+output "public_ip" {
+  value = module.compute.public_ip
+}
+
+output "ssh_command" {
+  value = "ssh ubuntu@${module.compute.public_ip}"
+}
