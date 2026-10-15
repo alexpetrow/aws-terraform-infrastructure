@@ -1,0 +1,11 @@
+---
+- name: Configure cloud web servers
+  hosts: role_web
+  become: true
+  roles:
+    - common
+    - users
+    - ssh_hardening
+    - hardening
+    - firewall
+    - nginx

@@ -1,0 +1,14 @@
+---
+# Ubuntu 26.04 defaults to sudo-rs (see project 01 troubleshooting)
+ansible_become_exe: sudo.ws
+
+# Only the automation user may log in over SSH on cloud instances.
+# Human access goes through SSM Session Manager.
+ssh_hardening_allow_users:
+  - ansible
+
+# UFW: SSH only from the admin IP (passed via environment, never committed)
+firewall_ssh_allowed_from: "{{ lookup('ansible.builtin.env', 'ADMIN_CIDR') | default('any', true) }}"
+
+firewall_allowed_rules:
+  - { port: "80", proto: tcp, comment: "HTTP" }

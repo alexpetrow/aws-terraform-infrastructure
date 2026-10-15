@@ -21,3 +21,6 @@ override.tf.json
 .vscode/
 .idea/
 .DS_Store
+
+# Ansible local cache
+.ansible/
