@@ -7,6 +7,7 @@ variable "region" {
 variable "ssh_allowed_cidr" {
   description = "Your public IP in CIDR notation (/32), allowed to use SSH"
   type        = string
+  sensitive   = true
 }
 
 variable "ssh_public_key" {
