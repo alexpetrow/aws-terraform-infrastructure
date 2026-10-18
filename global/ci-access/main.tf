@@ -7,6 +7,11 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 # --- Who can assume the plan role --------------------------------------------
 
+locals {
+  # GitHub OIDC subject with immutable owner and repository IDs
+  github_sub_pull_request = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:pull_request"
+}
+
 data "aws_iam_policy_document" "plan_trust" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -22,11 +27,11 @@ data "aws_iam_policy_document" "plan_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Only pull request workflows from this exact repository
+    # Only pull request workflows from this exact repository (matched by immutable IDs)
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:pull_request"]
+      values   = [local.github_sub_pull_request]
     }
   }
 }
