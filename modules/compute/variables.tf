@@ -28,6 +28,7 @@ variable "root_volume_size" {
 variable "ssh_allowed_cidr" {
   description = "CIDR allowed to connect over SSH (e.g. your public IP with /32)"
   type        = string
+  sensitive   = true
 
   validation {
     condition     = can(cidrhost(var.ssh_allowed_cidr, 0)) && var.ssh_allowed_cidr != "0.0.0.0/0"
