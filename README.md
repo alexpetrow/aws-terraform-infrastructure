@@ -267,6 +267,20 @@ The second run makes no changes.
 
 ![Second Ansible run with changed=0](docs/images/ansible-idempotent-run.png)
 
+### Plan in every pull request
+GitHub Actions authenticates to AWS with OIDC (no stored keys). The plan job runs only after
+validation passes, in parallel with linting and security scanning.
+
+![CI pipeline with plan job](docs/images/ci-pipeline-graph.png)
+
+The plan runs against the real AWS account and is published to the job summary:
+
+![Terraform plan result](docs/images/ci-terraform-plan.png)
+
+The admin IP is a sensitive variable and never appears in the public logs:
+
+![Sensitive value hidden in plan](docs/images/ci-terraform-plan-sensitive.png)
+
 ## Trade-offs and Next Steps
 
 | Current approach | Why | Next step |
