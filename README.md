@@ -65,6 +65,7 @@ flowchart TB
 - [x] Short-term credentials only (`aws login`), no access keys
 - [x] Ansible configuration with dynamic inventory based on resource tags
 - [x] CI on every pull request: `terraform fmt`, `validate`, TFLint and Checkov; protected `main` branch
+- [x] `terraform plan` in every pull request through GitHub Actions OIDC, with a read-only role and no stored AWS keys
 
 ## Tech Stack
 
@@ -82,6 +83,8 @@ flowchart TB
 ```
 .
 ├── bootstrap/                  # Creates the S3 bucket for remote state (run once, local state)
+├── global/
+│   └── ci-access/              # GitHub OIDC provider and read-only plan role
 ├── modules/
 │   ├── network/                # VPC, subnets, routing, default SG lockdown
 │   └── compute/                # EC2, security group, IAM role, key pair
@@ -199,6 +202,10 @@ of a monthly limit.
   enforced by input validation; UFW on the host as a second layer.
 - **State bucket:** public access fully blocked, versioning, `prevent_destroy`.
 - **Secrets in Git:** `*.tfvars`, state files and `.terraform/` are ignored; only `.example` files are committed.
+- **CI access:** GitHub Actions assumes a read-only IAM role through OIDC. The trust policy matches
+  this repository by immutable owner and repository IDs and accepts only pull request workflows;
+  fork pull requests never receive credentials. The role can write only `.tflock` files in the
+  state bucket, never the state itself.
 
 ### Checkov findings accepted for the lab
 
@@ -238,6 +245,9 @@ Documented in [docs/troubleshooting.md](docs/troubleshooting.md), among others:
 - **Silently ignored variables:** `group_vars` in the wrong directory made the roles use
   their defaults without any warning.
 - **Short-term credentials with boto3:** `aws login` needs `botocore[crt]` for the dynamic inventory.
+- **OIDC role denied:** GitHub's `sub` claim includes immutable owner and repository IDs.
+  Diagnosed by decoding the token claims; the trust policy now matches on IDs, which also
+  protects against repository name reuse.
 
 ## Evidence
 
@@ -261,7 +271,8 @@ The second run makes no changes.
 
 | Current approach | Why | Next step |
 |---|---|---|
-| CI checks code only, without AWS access | No credentials needed for v1 | `terraform plan` in pull requests with GitHub Actions OIDC (no stored keys) |
+| CI plan role uses AWS managed `ReadOnlyAccess` | Simple and covers every resource Terraform reads | Custom policy with only the `Describe*` / `Get*` actions this code needs |
+| No automated apply | Changes are applied locally after review | Apply from `main` with a separate role, protected by a GitHub environment with manual approval |
 | Public EC2 instance | Simplest working web server | Application Load Balancer + Auto Scaling group in private subnets |
 | No NAT Gateway | Cost | VPC endpoints for AWS services; NAT only where required |
 | Ansible roles loaded from a sibling repository | Simple reuse in a lab | Publish the roles as an Ansible collection |

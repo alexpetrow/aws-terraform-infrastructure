@@ -82,3 +82,23 @@ with the risk of cutting off SSH access during the run.
 x86-64-v2 instructions. Fixed by switching the VM CPU mode to Host Passthrough.
 Details in the
 [infrastructure-automation-lab troubleshooting guide](https://github.com/alexpetrow/infrastructure-automation-lab/blob/main/docs/troubleshooting.md).
+
+## GitHub Actions OIDC: Not authorized to perform sts:AssumeRoleWithWebIdentity
+
+**Symptom:** `configure-aws-credentials` fails after several retries, although the role ARN
+and the trust policy look correct.
+
+**Diagnosis:** A temporary workflow step decoded the OIDC token payload (claims only, never
+the token itself). The `sub` claim included immutable numeric IDs:
+`repo:OWNER@OWNER_ID/REPO@REPO_ID:pull_request`, while the trust policy expected the
+name-only format `repo:OWNER/REPO:pull_request`. `StringEquals` requires an exact match.
+
+**Fix:** The trust policy builds the subject from owner and repository IDs
+(see `global/ci-access`). IDs come from `https://api.github.com/repos/OWNER/REPO`.
+
+**Why it matters:** Names can be reused after a repository is deleted or renamed;
+numeric IDs cannot. Matching on IDs prevents a new repository with the same name
+from assuming the role.
+
+**Alternative diagnosis:** CloudTrail event history, event name `AssumeRoleWithWebIdentity`,
+shows the denied request.
