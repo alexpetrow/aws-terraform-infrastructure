@@ -25,7 +25,7 @@ jobs:
 
       - name: Validate all configurations
         run: |
-          for dir in bootstrap environments/dev modules/network modules/compute; do
+          for dir in bootstrap global/ci-access environments/dev modules/network modules/compute; do
             echo "::group::$dir"
             terraform -chdir="$dir" init -backend=false -input=false
             terraform -chdir="$dir" validate
@@ -63,3 +63,53 @@ jobs:
           directory: .
           framework: terraform
           quiet: true
+          
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: validate
+    # Only for pull requests from this repository, never from forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_VAR_ssh_allowed_cidr: ${{ secrets.TF_VAR_SSH_ALLOWED_CIDR }}
+      TF_VAR_ssh_public_key: ${{ vars.TF_VAR_SSH_PUBLIC_KEY }}
+    defaults:
+      run:
+        working-directory: environments/dev
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: eu-central-1
+          mask-aws-account-id: true
+
+      - name: Show assumed identity
+        run: aws sts get-caller-identity --query Arn --output text
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        run: terraform plan -input=false -no-color -lock-timeout=60s | tee plan.txt
+
+      - name: Publish plan to job summary
+        if: always()
+        run: |
+          {
+            echo "## Terraform Plan: dev"
+            echo '```'
+            cat plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY" 
