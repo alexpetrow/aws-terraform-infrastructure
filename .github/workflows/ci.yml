@@ -83,13 +83,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
-      - name: Debug OIDC token claims (temporary)
-        run: |
-          curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" \
-            | jq -r '.value' | cut -d '.' -f2 \
-            | python3 -c "import sys,base64,json; p=sys.stdin.read().strip(); p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p)); print(json.dumps({k: c.get(k) for k in ('sub','aud','repository','event_name')}, indent=2))"
-
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -114,9 +107,14 @@ jobs:
       - name: Publish plan to job summary
         if: always()
         run: |
-          {
-            echo "## Terraform Plan: dev"
-            echo '```'
-            cat plan.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY" 
+          if [ -f plan.txt ]; then
+            {
+              echo "## Terraform Plan: dev"
+              echo '```'
+              cat plan.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Terraform Plan: dev" >> "$GITHUB_STEP_SUMMARY"
+            echo "Plan did not run. See the failed step above." >> "$GITHUB_STEP_SUMMARY"
+          fi
